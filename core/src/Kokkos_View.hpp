@@ -2183,6 +2183,8 @@ typename Impl::MirrorType<Space,T,P ...>::view_type create_mirror(const Space& ,
   return typename Impl::MirrorType<Space,T,P ...>::view_type(src.label(),src.layout());
 }
 
+#if ! defined( KOKKOS_ENABLE_DEBUG_SEPARATE_MIRRORS )
+
 template< class T , class ... P >
 inline
 typename Kokkos::View<T,P...>::HostMirror
@@ -2234,6 +2236,26 @@ create_mirror_view(const Space& , const Kokkos::View<T,P...> & src
   , typename std::enable_if<!Impl::MirrorViewType<Space,T,P ...>::is_same_memspace>::type* = 0 ) {
   return typename Impl::MirrorViewType<Space,T,P ...>::view_type(src.label(),src.layout());
 }
+
+#else // defined( KOKKOS_ENABLE_DEBUG_SEPARATE_MIRRORS )
+
+// If this macro is defined, we force separate allocations even for spaces
+// that can access one another.
+// This allows users to debug synchronization errors using only a debugger-friendly CPU space
+
+template< class T , class ... P >
+inline
+typename Kokkos::View<T,P...>::HostMirror create_mirror_view(const Kokkos::View<T,P...> & src) {
+  return Kokkos::create_mirror(src);
+}
+
+template<class Space, class T, class ... P>
+typename Impl::MirrorType<Space,T,P ...>::view_type create_mirror_view(
+    const Space& space, const Kokkos::View<T,P...> & src) {
+  return Kokkos::create_mirror(space, src);
+}
+
+#endif // defined( KOKKOS_ENABLE_DEBUG_SEPARATE_MIRRORS )
 
 } /* namespace Kokkos */
 

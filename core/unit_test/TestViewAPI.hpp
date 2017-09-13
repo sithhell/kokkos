@@ -777,10 +777,16 @@ struct TestViewMirror
     int equal_ptr_h_d  = a_h.data()  ==  a_d.data() ? 1 : 0;
     int equal_ptr_h2_d = a_h2.data() ==  a_d.data() ? 1 : 0;
 
+#if defined( KOKKOS_ENABLE_DEBUG_SEPARATE_MIRRORS )
+    ASSERT_EQ( equal_ptr_h_h2, 0 );
+    ASSERT_EQ( equal_ptr_h_d, 0 );
+    ASSERT_EQ( equal_ptr_h2_d, 0 );
+#else
     int is_same_memspace = std::is_same< Kokkos::HostSpace, typename DeviceType::memory_space >::value ? 1 : 0;
     ASSERT_EQ( equal_ptr_h_h2, 1 );
     ASSERT_EQ( equal_ptr_h_d, is_same_memspace );
     ASSERT_EQ( equal_ptr_h2_d, is_same_memspace );
+#endif
 
     ASSERT_EQ( a_h.dimension_0(), a_h2.dimension_0() );
     ASSERT_EQ( a_h.dimension_0(), a_d .dimension_0() );
@@ -852,7 +858,11 @@ public:
     view_type a( "a" );
     mirror_type am = Kokkos::create_mirror_view( a );
     mirror_type ax = Kokkos::create_mirror( a );
+#if defined( KOKKOS_ENABLE_DEBUG_SEPARATE_MIRRORS )
+    ASSERT_NE( & a(), & am() );
+#else
     ASSERT_EQ( & a(), & am() );
+#endif
   }
 
   static void run_test_scalar()

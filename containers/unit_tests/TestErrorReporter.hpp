@@ -48,6 +48,8 @@
 #include <iostream>
 #include <Kokkos_Core.hpp>
 
+#include <cassert>
+
 namespace Test {
 
 // Just save the data in the report.  Informative text goies in the operator<<(..).
@@ -71,7 +73,7 @@ void checkReportersAndReportsAgree(const std::vector<int> &reporters,
                                    const std::vector<ReportType> &reports)
 {
   for (size_t i = 0; i < reports.size(); ++i) {
-    EXPECT_EQ(1, reporters[i] % 2);
+    assert(1 == reporters[i] % 2);
     EXPECT_EQ(reporters[i], reports[i].m_data1);
   }
 }

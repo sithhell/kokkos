@@ -164,6 +164,13 @@ TRIBITS_ADD_OPTION_AND_DEFINE(
   )
 
 TRIBITS_ADD_OPTION_AND_DEFINE(
+  Kokkos_ENABLE_Debug_Separate_Mirrors
+  KOKKOS_ENABLE_DEBUG_SEPARATE_MIRRORS
+  "Force create_mirror_view and DualView to always create separate allocations."
+  "${Kokkos_ENABLE_DEBUG}"
+  )
+
+TRIBITS_ADD_OPTION_AND_DEFINE(
   Kokkos_ENABLE_Profiling
   KOKKOS_ENABLE_PROFILING
   "Enable KokkosP profiling support for kernel data collections."
