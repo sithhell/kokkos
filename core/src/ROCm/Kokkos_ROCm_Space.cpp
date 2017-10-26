@@ -72,97 +72,110 @@ using namespace hc;
 
 DeepCopy<Kokkos::Experimental::ROCmSpace,Kokkos::Experimental::ROCmSpace,Kokkos::Experimental::ROCm>::DeepCopy( void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 
 DeepCopy<HostSpace,Kokkos::Experimental::ROCmSpace,Kokkos::Experimental::ROCm>::DeepCopy( void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 DeepCopy<Kokkos::Experimental::ROCmSpace,HostSpace,Kokkos::Experimental::ROCm>::DeepCopy( void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 DeepCopy<Kokkos::Experimental::ROCmSpace,Kokkos::Experimental::ROCmSpace,Kokkos::Experimental::ROCm>::DeepCopy( const Kokkos::Experimental::ROCm & instance , void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 DeepCopy<HostSpace,Kokkos::Experimental::ROCmSpace,Kokkos::Experimental::ROCm>::DeepCopy( const Kokkos::Experimental::ROCm & instance , void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 DeepCopy<Kokkos::Experimental::ROCmSpace,HostSpace,Kokkos::Experimental::ROCm>::DeepCopy( const Kokkos::Experimental::ROCm & instance , void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 
 
 DeepCopy<Kokkos::Experimental::ROCmHostPinnedSpace,Kokkos::Experimental::ROCmHostPinnedSpace,Kokkos::Experimental::ROCm>::DeepCopy( void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 
 DeepCopy<HostSpace,Kokkos::Experimental::ROCmHostPinnedSpace,Kokkos::Experimental::ROCm>::DeepCopy( void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 DeepCopy<Kokkos::Experimental::ROCmHostPinnedSpace,HostSpace,Kokkos::Experimental::ROCm>::DeepCopy( void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 DeepCopy<Kokkos::Experimental::ROCmHostPinnedSpace,Kokkos::Experimental::ROCmHostPinnedSpace,Kokkos::Experimental::ROCm>::DeepCopy( const Kokkos::Experimental::ROCm & instance , void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 DeepCopy<HostSpace,Kokkos::Experimental::ROCmHostPinnedSpace,Kokkos::Experimental::ROCm>::DeepCopy( const Kokkos::Experimental::ROCm & instance , void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 DeepCopy<Kokkos::Experimental::ROCmHostPinnedSpace,HostSpace,Kokkos::Experimental::ROCm>::DeepCopy( const Kokkos::Experimental::ROCm & instance , void * dst , const void * src , size_t n )
 {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   av.copy( src , dst , n);
+  hc2::accelerator::copy(
+    static_cast<const std::uint8_t*>(src),
+    static_cast<const std::uint8_t*>(src) + n,
+    static_cast<std::uint8_t*>(dst));
 }
 
 
-hc::completion_future DeepCopyAsyncROCm( void * dst , const void * src , size_t n) {
-   hc::accelerator acc;
-   hc::accelerator_view av = acc.get_default_view();
-   return(av.copy_async( src , dst , n));
+std::future<void> DeepCopyAsyncROCm( void * dst , const void * src , size_t n) {
+  return hc2::accelerator::copy_async(
+      static_cast<const std::uint8_t*>(src),
+      static_cast<const std::uint8_t*>(src) + n,
+      static_cast<std::uint8_t*>(dst));
 }
 
 } // namespace Impl

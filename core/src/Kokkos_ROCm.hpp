@@ -63,8 +63,7 @@
 
 /*--------------------------------------------------------------------------*/
 
-#include <hc.hpp>
-#include <hc_am.hpp>
+#include "/root/hc2/headers/hc2.hpp"
 #include <amp_math.h>
 
 #if defined( __HCC_ACCELERATOR__ )

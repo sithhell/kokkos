@@ -41,7 +41,7 @@
 //@HEADER
 */
 
-#include <hc.hpp>
+#include "/root/hc2/headers/hc2.hpp"
 #include <type_traits>
 #include <vector>
 #include <memory>
@@ -68,7 +68,7 @@ template<class T>
 using lds_t = T;
 #else
 // prior to 1.5, needed to decorate LDS addresses
-using lds_t = __attribute__((address_space(3))) T;
+//using lds_t = __attribute__((address_space(3))) T;
 #endif
 
 #define KOKKOS_ROCM_TILE_RESTRIC_CPU restrict(cpu, amp)
@@ -492,7 +492,7 @@ tile_desc get_tile_desc(std::size_t size,
 }
 
 template<class U, class F, class T=typename std::remove_extent<U>::type>
-hc::completion_future tile_for(tile_desc td, F f) 
+std::future<void> tile_for(tile_desc td, F f) 
 {
     assert(td.array_size <= get_max_tile_array_size() && "Exceed max array size");
     assert(((td.size % td.tile_size) == 0) && "Tile size must be divisible by extent");

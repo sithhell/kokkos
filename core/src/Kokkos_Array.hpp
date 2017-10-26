@@ -106,6 +106,17 @@ public:
     }
 
   // Do not default unless move and move-assignment are also defined
+#if defined( KOKKOS_ENABLE_ROCM )
+  ~Array() = default ;
+  Array() = default ;
+  Array(std::initializer_list<T> init_list)
+  {
+     std::copy_n(
+     init_list.begin(),
+     init_list.size(),
+     m_internal_implementation_private_member_data);
+  }
+#endif
   // ~Array() = default ;
   // Array() = default ;
   // Array( const Array & ) = default ;

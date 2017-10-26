@@ -112,34 +112,30 @@ bool rocm_launch_blocking()
 // true device memory allocation, not visible from host
 void * rocm_device_allocate(int size)
 {
-  void * ptr;
-  hc::accelerator acc;
-  ptr = hc::am_alloc(size,acc,0);
-  return ptr;
+  return hc2::accelerator{}.get_dedicated_memory_allocator().allocate(size);
 }
 
-// host pinned allocation
-// flag = 1, non-coherent, host resident, but with gpu address space pointer
-// flag = 2, coherent, host resident, but with host address space pointer
 void * rocm_hostpinned_allocate(int size)
 {
-  void * ptr;
-  hc::accelerator acc;
-  ptr = hc::am_alloc(size,acc,2);
-  return ptr;
+  return hc2::accelerator{}.get_cpu_shared_memory_allocator().allocate(size);
 }
 // same free used by all rocm memory allocations
 void rocm_device_free(void * ptr)
 {
-  hc::am_free(ptr);
+  auto cpu_shared_mem_alloc =
+    hc2::accelerator{}.get_cpu_shared_memory_allocator();
+  auto p = static_cast<std::uint8_t*>(ptr);
+
+  if (owns(cpu_shared_mem_alloc, ptr)) cpu_shared_mem_alloc.deallocate(p);
+  else hc2::accelerator{}.get_dedicated_memory_allocator().deallocate(p);
 }
 
 
 KOKKOS_INLINE_FUNCTION
 void rocm_device_synchronize()
 {
-   hc::accelerator_view av = hc::accelerator().get_default_view();
-   hc::completion_future fut = av.create_marker();
+   hc2::accelerator_view av = hc::accelerator().get_default_view();
+   std::future<void> fut = av.create_marker();
    fut.wait();
 }
 
@@ -544,13 +540,13 @@ void rocmMemset(  Kokkos::Experimental::ROCm::size_type * ptr ,  Kokkos::Experim
 {
 char * mptr = (char * ) ptr;
 #if 0
-   parallel_for_each(hc::extent<1>(size),
-                    [=, &ptr]
+   hc2::parallel_for_each(hc::extent<1>(size),
+                    [=]
                     (hc::index<1> idx) __HC__
    {
       int i = idx[0];
       ptr[i] = value;
-   }).wait();
+   });
 #else
    for (int i= 0; i<size ; i++)
    {

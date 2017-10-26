@@ -41,8 +41,7 @@
 //@HEADER
 */
 
-#include <hc.hpp>
-//#include <hsa_atomic.h>
+#include "/root/hc2/headers/hc2.hpp"
 
 #ifdef KOKKOS_ENABLE_ROCM_ATOMICS
 namespace Kokkos {

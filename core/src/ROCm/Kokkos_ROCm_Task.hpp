@@ -46,6 +46,8 @@
 
 #if defined( KOKKOS_ENABLE_TASKDAG )
 
+#include "/root/hc2/headers/hc2.hpp"
+
 #include <ROCm/Kokkos_ROCm_Vectorization.hpp>
 
 //----------------------------------------------------------------------------
@@ -94,7 +96,7 @@ public:
       hc::extent< 1 > flat_extent( 1 );
       hc::tiled_extent< 1 > team_extent = flat_extent.tile( 1);
 
-      hc::parallel_for_each( team_extent , [&](hc::tiled_index<1> idx) [[hc]]
+      hc2::parallel_for_each( team_extent , [&](hc::tiled_index<1> idx) [[hc]]
       {
          *ptr = TaskType::apply ;
       }).wait();

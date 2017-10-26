@@ -636,14 +636,14 @@ public:
 auto foo = [=](size_t i){rocm_invoke<typename Policy::work_tag>(f, i);};
 
 #if __hcc_workweek__ > 16600
-      hc::parallel_for_each(hc::extent<1>(len) , [=](const hc::index<1> & idx) [[hc]]  [[hc_max_workgroup_dim(1024,1,1)]]
+      hc2::parallel_for_each(hc::extent<1>(len) , [=](const hc::index<1> & idx) [[hc]]  [[hc_max_workgroup_dim(1024,1,1)]]
 #else
-      hc::parallel_for_each(hc::extent<1>(len).tile(256) , [=](const hc::index<1> & idx) [[hc]]
+      hc2::parallel_for_each(hc::extent<1>(len).tile(256) , [=](const hc::index<1> & idx) [[hc]]
 #endif
       {
         if(idx[0]<len)  // workaround for Carrizo (and Fiji?)
           foo(idx[0] + offset);
-      }).wait();
+      });
 
     }
 
@@ -686,10 +686,10 @@ public:
       hc::extent< 1 > flat_extent( total_size );
 
       hc::tiled_extent< 1 > team_extent = flat_extent.tile(team_size*vector_length);
-      hc::parallel_for_each( team_extent , [=](hc::tiled_index<1> idx) [[hc]]
+      hc2::parallel_for_each( team_extent , [=](hc::tiled_index<1> idx) [[hc]]
       {
         rocm_invoke<typename Policy::work_tag>(f, typename Policy::member_type(idx, league_size, team_size, shared, shared_size, scratch_size0, scratch, scratch_size1,vector_length));
-      }).wait();
+      });
 
       if(0<scratch_size1)
         rocm_device_free(scratch);

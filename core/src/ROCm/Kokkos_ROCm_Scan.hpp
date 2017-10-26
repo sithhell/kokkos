@@ -64,10 +64,14 @@ void scan_enqueue(
 
     const auto td = get_tile_desc<value_type>(len);
     std::vector<value_type> result_cpu(td.num_tiles);
-    hc::array<value_type> result(td.num_tiles);
-    hc::array<value_type> scratch(len);
+    auto result = reinterpret_cast<value_type*>(
+            hc2::accelerator{}.get_dedicated_memory_allocator().allocate(
+                sizeof(value_type) * td.num_tiles));
+    auto scratch = reinterpret_cast<value_type*>(
+            hc2::accelerator{}.get_dedicated_memory_allocator().allocate(
+                sizeof(value_type) * len));
 
-    tile_for<value_type>(td, [&,f,len,td](hc::tiled_index<1> t_idx, tile_buffer<value_type> buffer) [[hc]] 
+    tile_for<value_type>(td, [=](hc::tiled_index<1> t_idx, tile_buffer<value_type> buffer) [[hc]] 
     {
         const auto local = t_idx.local[0];
         const auto global = t_idx.global[0];
@@ -124,8 +128,8 @@ void scan_enqueue(
         }
         // Copy tiles into global memory
         if (global < len) scratch[global] = buffer[local];
-    }).wait();
-    copy(result,result_cpu.data());
+    });
+    hc2::accelerator::copy(result, result + td.num_tiles, result_cpu.begin());
 
 //  The std::partial_sum was segfaulting, despite that this is cpu code.
 //   if(td.num_tiles>1)
@@ -134,8 +138,8 @@ void scan_enqueue(
    for(int i=1; i<td.num_tiles; i++)
       ValueJoin::join(f, &result_cpu[i], &result_cpu[i-1]);
 
-    copy(result_cpu.data(),result);
-    hc::parallel_for_each(hc::extent<1>(len).tile(td.tile_size), [&,f,len,td](hc::tiled_index<1> t_idx) [[hc]] 
+    hc2::accelerator::copy(result_cpu.cbegin(), result_cpu.cend(), result);
+    hc2::parallel_for_each(hc::extent<1>(len).tile(td.tile_size), [=](hc::tiled_index<1> t_idx) [[hc]] 
     {
 //        const auto local = t_idx.local[0];
         const auto global = t_idx.global[0];
@@ -150,7 +154,7 @@ void scan_enqueue(
 //            if (tile != 0) ValueJoin::join(f, &final_state, &result[tile-1]);
             rocm_invoke<Tag>(f, transform_index(t_idx, td.tile_size, td.num_tiles), final_state, true);
         }
-    }).wait();
+    });
 }
 
 } // namespace Impl

@@ -157,7 +157,7 @@ void TaskQueueSpecialization< Kokkos::Experimental::ROCm >::execute
   hc::tiled_extent< 3 > team_extent = flat_extent.tile(1,
                                 wavefront_size,workgroups_per_wavefront);
 
-  hc::parallel_for_each( team_extent , [&](hc::tiled_index<3> idx) [[hc]]
+  hc2::parallel_for_each( team_extent , [&](hc::tiled_index<3> idx) [[hc]]
   {
     TaskQueueSpecialization< Kokkos::Experimental::ROCm >::driver( queue,idx ); 
   }).wait();

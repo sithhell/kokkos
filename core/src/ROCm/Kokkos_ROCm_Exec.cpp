@@ -46,8 +46,7 @@
 #include <algorithm>
 #include <typeinfo>
 #include <Kokkos_Macros.hpp>
-//#include <ROCm/Kokkos_ROCmExec.hpp>
-#include <hc.hpp>
+#include "/root/hc2/headers/hc2.hpp"
 
 #define ROCM_SPACE_ATOMIC_MASK      0x1FFFF
 #define ROCM_SPACE_ATOMIC_XOR_MASK  0x15A39

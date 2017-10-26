@@ -265,7 +265,7 @@ struct MemorySpaceAccess< Kokkos::Experimental::ROCmHostPinnedSpace , Kokkos::Ex
 namespace Kokkos {
 namespace Impl {
 
-hc::completion_future DeepCopyAsyncROCm( void * dst , const void * src , size_t n);
+std::future<void> DeepCopyAsyncROCm( void * dst , const void * src , size_t n);
 
 template<> struct DeepCopy< Kokkos::Experimental::ROCmSpace , Kokkos::Experimental::ROCmSpace , Kokkos::Experimental::ROCm>
 {
@@ -295,9 +295,8 @@ template<class ExecutionSpace> struct DeepCopy< Kokkos::Experimental::ROCmSpace 
   DeepCopy( const ExecutionSpace& exec, void * dst , const void * src , size_t n )
   {
     exec.fence();
-    hc::completion_future fut = DeepCopyAsyncROCm (dst,src,n);
+    auto fut = DeepCopyAsyncROCm (dst,src,n);
     fut.wait();
-//    DeepCopy (dst,src,n);
   }
 };
 
@@ -359,9 +358,8 @@ struct DeepCopy< Kokkos::Experimental::ROCmSpace , Kokkos::Experimental::ROCmHos
   DeepCopy( const ExecutionSpace& exec, void * dst , const void * src , size_t n )
   {
     exec.fence();
-    hc::completion_future fut = DeepCopyAsyncROCm (dst,src,n);
+    auto fut = DeepCopyAsyncROCm (dst,src,n);
     fut.wait();
-//    DeepCopyROCm (dst,src,n);
   }
 };
 
@@ -375,9 +373,8 @@ template<class ExecutionSpace> struct DeepCopy< Kokkos::Experimental::ROCmHostPi
   DeepCopy( const ExecutionSpace& exec, void * dst , const void * src , size_t n )
   {
     exec.fence();
-    hc::completion_future fut = DeepCopyAsyncROCm (dst,src,n);
+    auto fut = DeepCopyAsyncROCm (dst,src,n);
     fut.wait();
-//    DeepCopyROCm (dst,src,n);
   }
 };
 
@@ -393,9 +390,6 @@ template<class ExecutionSpace> struct DeepCopy< Kokkos::Experimental::ROCmHostPi
   DeepCopy( const ExecutionSpace& exec, void * dst , const void * src , size_t n )
   {
     exec.fence();
-//    hc::completion_future fut = DeepCopyAsyncROCm (dst,src,n);
-//    fut.wait();
-//    DeepCopyAsyncROCm (dst,src,n);
     DeepCopy (dst,src,n);
   }
 };
