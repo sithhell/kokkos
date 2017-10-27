@@ -499,13 +499,9 @@ std::future<void> tile_for(tile_desc td, F f)
     auto grid = hc::extent<1>(td.size).tile_with_dynamic(
                           td.tile_size, td.reduce_size + td.shared_size);
     // grid.set_dynamic_group_segment_size(td.reduce_size + td.shared_size);
-    return parallel_for_each(grid, [=](hc::tiled_index<1> t_idx) [[hc]] 
+    return hc2::parallel_for_each_async(grid, [=](hc::tiled_index<1> t_idx) [[hc]] 
     {
-#if defined (ROCM15)
         typedef T group_t;
-#else
-        typedef __attribute__((address_space(3))) T group_t;
-#endif
         group_t * buffer = (group_t *)hc::get_dynamic_group_segment_base_pointer();
         tile_buffer<U> tb(buffer, td.tile_size, td.array_size);
         zero_init(tb[t_idx.local[0]], td.array_size);

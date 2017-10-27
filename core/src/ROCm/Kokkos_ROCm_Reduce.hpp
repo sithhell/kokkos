@@ -117,9 +117,11 @@ void reduce_enqueue(
 
   // allocate host and device memory for the results from each team
   std::vector<T> result_cpu(td.num_tiles*output_length);
-  hc::array<T> result(td.num_tiles*output_length);
+  auto result = reinterpret_cast<T*>(
+          hc2::accelerator{}.get_dedicated_memory_allocator().allocate(
+          sizeof(T) * td.num_tiles * output_length));
 
-  auto fut = tile_for<T[]>(td, [=,&result](hc::tiled_index<1> t_idx, tile_buffer<T[]> buffer) [[hc]] 
+  auto fut = tile_for<T[]>(td, [=](hc::tiled_index<1> t_idx, tile_buffer<T[]> buffer) [[hc]] 
   {
       const auto local = t_idx.local[0];
       const auto global = t_idx.global[0];
@@ -153,25 +155,14 @@ void reduce_enqueue(
       // Store the tile result in the global memory.
       if (local == 0)
       {
-#if KOKKOS_ROCM_HAS_WORKAROUNDS
           // Workaround for assigning from LDS memory: std::copy should work
           // directly
           buffer.action_at(0, [&](T* x)
           {
-#if ROCM15
-// new ROCM 15 address space changes aren't implemented in std algorithms yet
-              auto * src = reinterpret_cast<char *>(x);
-              auto * dest = reinterpret_cast<char *>(result.data()+tile*output_length);
-              for(int i=0; i<sizeof(T);i++) dest[i] = src[i];
-#else
-              // Workaround: copy_if used to avoid memmove
-              std::copy_if(x, x+output_length, result.data()+tile*output_length, always_true{} );
-#endif
+              for (auto i = 0u; i != output_length; ++i) {
+                  result[tile * output_length + i] = x[i];
+              }
           });
-#else
-          std::copy(buffer, buffer+output_length, result.data()+tile*output_length);
-
-#endif
       }
       
   });
@@ -179,7 +170,8 @@ void reduce_enqueue(
      ValueInit::init(ReducerConditional::select(f, reducer), output_result);
   fut.wait();
 
-  copy(result,result_cpu.data());
+  hc2::accelerator::copy(
+          result, result + td.num_tiles * output_length, result_cpu.begin());
   if (output_result != nullptr) {
     for(std::size_t i=0;i<td.num_tiles;i++)
        ValueJoin::join(ReducerConditional::select(f, reducer), output_result, result_cpu.data()+i*output_length);
