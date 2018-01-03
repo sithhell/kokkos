@@ -45,7 +45,6 @@
 #define KOKKOS_DUMMYDEVICE_HPP
 
 #include <Kokkos_Macros.hpp>
-#if defined( KOKKOS_ENABLE_DUMMY )
 
 #include <Kokkos_Core_fwd.hpp>
 
@@ -62,10 +61,14 @@ public:
 
   //! Tag this class as a kokkos memory space
   typedef DummySpace             memory_space ;
-  typedef Kokkos::DefaultHostExecutionSpace            execution_space ;
+  typedef Kokkos::Serial         execution_space ;
   typedef Kokkos::Device<execution_space,memory_space> device_type;
 
   typedef size_t                 size_type ;
+
+  /*--------------------------------*/
+
+  Kokkos::HostSpace host_space;
 
   /*--------------------------------*/
 
@@ -113,7 +116,7 @@ static_assert( Kokkos::Impl::MemorySpaceAccess< Kokkos::DummySpace , Kokkos::Dum
 template<>
 struct MemorySpaceAccess< Kokkos::HostSpace , Kokkos::DummySpace > {
   enum { assignable = false };
-  enum { accessible = false };
+  enum { accessible = true };
   enum { deepcopy   = true };
 };
 
@@ -122,7 +125,7 @@ struct MemorySpaceAccess< Kokkos::HostSpace , Kokkos::DummySpace > {
 template<>
 struct MemorySpaceAccess< Kokkos::DummySpace , Kokkos::HostSpace > {
   enum { assignable = false };
-  enum { accessible = false };
+  enum { accessible = true };
   enum { deepcopy   = true };
 };
 
@@ -148,20 +151,20 @@ template<typename ExecSpace> struct DeepCopy< DummySpace , DummySpace , ExecSpac
 
 template<typename ExecSpace> struct DeepCopy< DummySpace , HostSpace , ExecSpace>
 {
-  DeepCopy( void * dst , const void * src , size_t ) {
+  DeepCopy( void * dst , const void * src , size_t n) {
     DeepCopy<HostSpace, HostSpace, ExecSpace>(dst, src, n);
   }
-  DeepCopy( const Kokkos::DefaultHostExecutionSpace & , void * dst , const void * src , size_t ) {
+  DeepCopy( const Kokkos::DefaultHostExecutionSpace & exec, void * dst , const void * src , size_t n) {
     DeepCopy<HostSpace, HostSpace, ExecSpace>(exec, dst, src, n);
   }
 };
 
 template<typename ExecSpace> struct DeepCopy< HostSpace , DummySpace , ExecSpace>
 {
-  DeepCopy( void * dst , const void * src , size_t ) {
+  DeepCopy( void * dst , const void * src , size_t n) {
     DeepCopy<HostSpace, HostSpace, ExecSpace>(dst, src, n);
   }
-  DeepCopy( const Kokkos::DefaultHostExecutionSpace & , void * dst , const void * src , size_t ) {
+  DeepCopy( const Kokkos::DefaultHostExecutionSpace & exec, void * dst , const void * src , size_t n) {
     DeepCopy<HostSpace, HostSpace, ExecSpace>(exec, dst, src, n);
   }
 };
@@ -226,8 +229,6 @@ class SharedAllocationRecord< Kokkos::DummySpace , void >
 {
 private:
 
-  friend class SharedAllocationRecord< Kokkos::CudaUVMSpace , void > ;
-
   typedef SharedAllocationRecord< void , void >  RecordBase ;
 
   SharedAllocationRecord( const SharedAllocationRecord & ) = delete ;
@@ -235,20 +236,14 @@ private:
 
   static void deallocate( RecordBase * );
 
-  static ::cudaTextureObject_t
-  attach_texture_object( const unsigned sizeof_alias
-                       , void * const   alloc_ptr
-                       , const size_t   alloc_size );
-
   static RecordBase s_root_record ;
 
-  ::cudaTextureObject_t   m_tex_obj ;
   const Kokkos::DummySpace m_space ;
 
 protected:
 
   ~SharedAllocationRecord();
-  SharedAllocationRecord() : RecordBase(), m_tex_obj(0), m_space() {}
+  SharedAllocationRecord() : RecordBase(), m_space() {}
 
   SharedAllocationRecord( const Kokkos::DummySpace        & arg_space
                         , const std::string              & arg_label
@@ -258,11 +253,20 @@ protected:
 
 public:
 
-  std::string get_label() const ;
+  inline
+  std::string get_label() const
+  {
+    return std::string( RecordBase::head()->m_label );
+  }
 
-  static SharedAllocationRecord * allocate( const Kokkos::DummySpace &  arg_space
-                                          , const std::string       &  arg_label
-                                          , const size_t               arg_alloc_size );
+  static
+  SharedAllocationRecord * allocate( const Kokkos::DummySpace &  arg_space
+                                   , const std::string       &  arg_label
+                                   , const size_t               arg_alloc_size
+                                   )
+  {
+    return new SharedAllocationRecord( arg_space, arg_label, arg_alloc_size );
+  }
 
   /**\brief  Allocate tracked memory in the space */
   static
@@ -281,176 +285,7 @@ public:
 
   static SharedAllocationRecord * get_record( void * arg_alloc_ptr );
 
-  template< typename AliasType >
-  inline
-  ::cudaTextureObject_t attach_texture_object()
-    {
-      static_assert( ( std::is_same< AliasType , int >::value ||
-                       std::is_same< AliasType , ::int2 >::value ||
-                       std::is_same< AliasType , ::int4 >::value )
-                   , "Cuda texture fetch only supported for alias types of int, ::int2, or ::int4" );
-
-      if ( m_tex_obj == 0 ) {
-        m_tex_obj = attach_texture_object( sizeof(AliasType)
-                                         , (void*) RecordBase::m_alloc_ptr
-                                         , RecordBase::m_alloc_size );
-      }
-
-      return m_tex_obj ;
-    }
-
-  template< typename AliasType >
-  inline
-  int attach_texture_object_offset( const AliasType * const ptr )
-    {
-      // Texture object is attached to the entire allocation range
-      return ptr - reinterpret_cast<AliasType*>( RecordBase::m_alloc_ptr );
-    }
-
   static void print_records( std::ostream & , const Kokkos::DummySpace & , bool detail = false );
-};
-
-
-template<>
-class SharedAllocationRecord< Kokkos::CudaUVMSpace , void >
-  : public SharedAllocationRecord< void , void >
-{
-private:
-
-  typedef SharedAllocationRecord< void , void >  RecordBase ;
-
-  SharedAllocationRecord( const SharedAllocationRecord & ) = delete ;
-  SharedAllocationRecord & operator = ( const SharedAllocationRecord & ) = delete ;
-
-  static void deallocate( RecordBase * );
-
-  static RecordBase s_root_record ;
-
-  ::cudaTextureObject_t      m_tex_obj ;
-  const Kokkos::CudaUVMSpace m_space ;
-
-protected:
-
-  ~SharedAllocationRecord();
-  SharedAllocationRecord() : RecordBase(), m_tex_obj(0), m_space() {}
-
-  SharedAllocationRecord( const Kokkos::CudaUVMSpace     & arg_space
-                        , const std::string              & arg_label
-                        , const size_t                     arg_alloc_size
-                        , const RecordBase::function_type  arg_dealloc = & deallocate
-                        );
-
-public:
-
-  std::string get_label() const ;
-
-  static SharedAllocationRecord * allocate( const Kokkos::CudaUVMSpace &  arg_space
-                                          , const std::string          &  arg_label
-                                          , const size_t                  arg_alloc_size
-                                          );
-
-  /**\brief  Allocate tracked memory in the space */
-  static
-  void * allocate_tracked( const Kokkos::CudaUVMSpace & arg_space
-                         , const std::string & arg_label
-                         , const size_t arg_alloc_size );
-
-  /**\brief  Reallocate tracked memory in the space */
-  static
-  void * reallocate_tracked( void * const arg_alloc_ptr
-                           , const size_t arg_alloc_size );
-
-  /**\brief  Deallocate tracked memory in the space */
-  static
-  void deallocate_tracked( void * const arg_alloc_ptr );
-
-  static SharedAllocationRecord * get_record( void * arg_alloc_ptr );
-
-
-  template< typename AliasType >
-  inline
-  ::cudaTextureObject_t attach_texture_object()
-    {
-      static_assert( ( std::is_same< AliasType , int >::value ||
-                       std::is_same< AliasType , ::int2 >::value ||
-                       std::is_same< AliasType , ::int4 >::value )
-                   , "Cuda texture fetch only supported for alias types of int, ::int2, or ::int4" );
-
-      if ( m_tex_obj == 0 ) {
-        m_tex_obj = SharedAllocationRecord< Kokkos::DummySpace , void >::
-          attach_texture_object( sizeof(AliasType)
-                               , (void*) RecordBase::m_alloc_ptr
-                               , RecordBase::m_alloc_size );
-      }
-
-      return m_tex_obj ;
-    }
-
-  template< typename AliasType >
-  inline
-  int attach_texture_object_offset( const AliasType * const ptr )
-    {
-      // Texture object is attached to the entire allocation range
-      return ptr - reinterpret_cast<AliasType*>( RecordBase::m_alloc_ptr );
-    }
-
-};
-
-template<>
-class SharedAllocationRecord< Kokkos::CudaHostPinnedSpace , void >
-  : public SharedAllocationRecord< void , void >
-{
-private:
-
-  typedef SharedAllocationRecord< void , void >  RecordBase ;
-
-  SharedAllocationRecord( const SharedAllocationRecord & ) = delete ;
-  SharedAllocationRecord & operator = ( const SharedAllocationRecord & ) = delete ;
-
-  static void deallocate( RecordBase * );
-
-  static RecordBase s_root_record ;
-
-  const Kokkos::CudaHostPinnedSpace m_space ;
-
-protected:
-
-  ~SharedAllocationRecord();
-  SharedAllocationRecord() : RecordBase(), m_space() {}
-
-  SharedAllocationRecord( const Kokkos::CudaHostPinnedSpace     & arg_space
-                        , const std::string              & arg_label
-                        , const size_t                     arg_alloc_size
-                        , const RecordBase::function_type  arg_dealloc = & deallocate
-                        );
-
-public:
-
-  std::string get_label() const ;
-
-  static SharedAllocationRecord * allocate( const Kokkos::CudaHostPinnedSpace &  arg_space
-                                          , const std::string          &  arg_label
-                                          , const size_t                  arg_alloc_size
-                                          );
-  /**\brief  Allocate tracked memory in the space */
-  static
-  void * allocate_tracked( const Kokkos::CudaHostPinnedSpace & arg_space
-                         , const std::string & arg_label
-                         , const size_t arg_alloc_size );
-
-  /**\brief  Reallocate tracked memory in the space */
-  static
-  void * reallocate_tracked( void * const arg_alloc_ptr
-                           , const size_t arg_alloc_size );
-
-  /**\brief  Deallocate tracked memory in the space */
-  static
-  void deallocate_tracked( void * const arg_alloc_ptr );
-
-
-  static SharedAllocationRecord * get_record( void * arg_alloc_ptr );
-
-  static void print_records( std::ostream & , const Kokkos::CudaHostPinnedSpace & , bool detail = false );
 };
 
 } // namespace Impl
@@ -459,6 +294,5 @@ public:
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 
-#endif /* #if defined( KOKKOS_ENABLE_CUDA ) */
-#endif /* #define KOKKOS_CUDASPACE_HPP */
+#endif
 

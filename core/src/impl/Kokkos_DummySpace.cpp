@@ -59,12 +59,12 @@
 namespace Kokkos {
 
 /* Default allocation mechanism */
-DummySpace::DummySpace()
+DummySpace::DummySpace() : host_space()
 {}
 
 void * DummySpace::allocate( const size_t arg_alloc_size ) const
 {
-  return Kokkos::HostSpace::allocate(arg_alloc_size);
+  return host_space.allocate(arg_alloc_size);
 }
 
 
@@ -73,7 +73,7 @@ void DummySpace::deallocate( void * const arg_alloc_ptr
     arg_alloc_size
     ) const
 {
-  Kokkos::HostSpace::deallocate(arg_alloc_ptr, arg_alloc_size);
+  host_space.deallocate(arg_alloc_ptr, arg_alloc_size);
 }
 
 void DummySpace::access_error()

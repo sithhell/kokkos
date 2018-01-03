@@ -1702,6 +1702,11 @@ create_mirror_view( const Kokkos::View<T,P...> & src
                     )>::type * = 0
                   )
 {
+  std::cout << "calling identity create_mirror_view: "
+    << typeid(typename Kokkos::View<T,P...>::memory_space).name()
+    << ", "
+    << typeid(typename Kokkos::View<T,P...>::HostMirror::memory_space).name()
+    << "\n";
   return src ;
 }
 
@@ -1720,6 +1725,11 @@ create_mirror_view( const Kokkos::View<T,P...> & src
                     )>::type * = 0
                   )
 {
+  std::cout << "calling different create_mirror_view: "
+    << typeid(typename Kokkos::View<T,P...>::memory_space).name()
+    << ", "
+    << typeid(typename Kokkos::View<T,P...>::HostMirror::memory_space).name()
+    << "\n";
   return Kokkos::create_mirror( src );
 }
 

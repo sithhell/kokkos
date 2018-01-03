@@ -76,11 +76,11 @@ class serial : public ::testing::Test {
 protected:
   static void SetUpTestCase () {
     std::cout << std::setprecision(5) << std::scientific;
-    Kokkos::Serial::initialize ();
+    Kokkos::initialize ();
   }
 
   static void TearDownTestCase () {
-    Kokkos::Serial::finalize ();
+    Kokkos::finalize ();
   }
 };
 
@@ -149,6 +149,11 @@ TEST_F( serial, bitset )
     test_dualview_combinations<int,Kokkos::Serial>(size);               \
   }
 
+#define SERIAL_DUALVIEW_DUMMYSPACE_COMBINE_TEST( size )             \
+  TEST_F( serial, dualview_dummyspace_combination##size##x) {                      \
+    test_dualview_combinations<int,Kokkos::DummySpace>(size);               \
+  }
+
 #define SERIAL_SCATTERVIEW_TEST( size )             \
   TEST_F( serial, scatterview_##size##x) {                      \
     test_scatter_view<Kokkos::Serial>(size);               \
@@ -162,6 +167,7 @@ SERIAL_DEEP_COPY( 10000, 1 )
 SERIAL_VECTOR_COMBINE_TEST( 10 )
 SERIAL_VECTOR_COMBINE_TEST( 3057 )
 SERIAL_DUALVIEW_COMBINE_TEST( 10 )
+SERIAL_DUALVIEW_DUMMYSPACE_COMBINE_TEST( 10 )
 
 SERIAL_SCATTERVIEW_TEST( 10 )
 
