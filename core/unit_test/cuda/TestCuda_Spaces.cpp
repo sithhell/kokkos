@@ -171,6 +171,7 @@ TEST_F( cuda, space_access )
     std::is_same< Kokkos::Impl::HostMirror< Kokkos::CudaSpace >::Space
                 , Kokkos::HostSpace >::value, "" );
 
+#if 0
   static_assert(
     std::is_same< Kokkos::Impl::HostMirror< Kokkos::CudaUVMSpace >::Space
                 , Kokkos::Device< Kokkos::HostSpace::execution_space
@@ -179,6 +180,15 @@ TEST_F( cuda, space_access )
   static_assert(
     std::is_same< Kokkos::Impl::HostMirror< Kokkos::CudaHostPinnedSpace >::Space
                 , Kokkos::CudaHostPinnedSpace >::value, "" );
+#else
+  static_assert(
+    std::is_same< Kokkos::Impl::HostMirror< Kokkos::CudaUVMSpace >::Space
+                , Kokkos::HostSpace >::value, "" );
+
+  static_assert(
+    std::is_same< Kokkos::Impl::HostMirror< Kokkos::CudaHostPinnedSpace >::Space
+                , Kokkos::HostSpace >::value, "" );
+#endif
 
   static_assert(
     std::is_same< Kokkos::Device< Kokkos::HostSpace::execution_space

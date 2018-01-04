@@ -70,6 +70,11 @@ namespace Impl {
       if(n<10) n = 10;
       if(m<3) m = 3;
       ViewType a("A",n,m);
+      if (a.d_view.data() != a.h_view.data()) {
+        std::cerr << "the pointers are different\n";
+      } else {
+        Kokkos::abort("the pointers are still the same\n");
+      }
 
       Kokkos::deep_copy( a.d_view , 1 );
 

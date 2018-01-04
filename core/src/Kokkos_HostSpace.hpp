@@ -174,6 +174,7 @@ static_assert( Kokkos::Impl::MemorySpaceAccess< Kokkos::HostSpace, Kokkos::HostS
 template< typename S >
 struct HostMirror {
 private:
+#if 0
   // If input execution space can access HostSpace then keep it.
   // Example: Kokkos::OpenMP can access, Kokkos::Cuda cannot
   enum { keep_exe = Kokkos::Impl::MemorySpaceAccess
@@ -183,6 +184,10 @@ private:
   // Example:  Cannot access Kokkos::CudaSpace, can access Kokkos::CudaUVMSpace
   enum { keep_mem = Kokkos::Impl::MemorySpaceAccess
                       < Kokkos::HostSpace, typename S::memory_space >::accessible };
+#else
+  enum { keep_exe = std::is_same<typename S::execution_space::memory_space, Kokkos::HostSpace >::value };
+  enum { keep_mem = std::is_same<Kokkos::HostSpace, typename S::memory_space>::value };
+#endif
 
 public:
 
