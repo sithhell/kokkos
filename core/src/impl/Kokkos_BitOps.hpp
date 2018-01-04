@@ -78,6 +78,8 @@ int bit_first_zero( unsigned i ) noexcept
   return full != i ? __cnttz4( ~i ) : -1 ;
 #elif defined( KOKKOS_COMPILER_CRAYC )
   return full != i ? _popcnt( i ^ (i+1) ) - 1 : -1 ;
+#elif defined( __clang__ )
+  return full != i ? __builtin_ffs( int(~i) ) - 1 : -1 ;
 #elif defined( KOKKOS_COMPILER_GNU ) || defined( __GNUC__ ) || defined( __GNUG__ )
   return full != i ? __builtin_ffs( ~i ) - 1 : -1 ;
 #else
@@ -102,6 +104,8 @@ int bit_scan_forward( unsigned i )
   return __cnttz4(i);
 #elif defined( KOKKOS_COMPILER_CRAYC )
   return i ? _popcnt(~i & (i-1)) : -1;
+#elif defined( __clang__ )
+  return __builtin_ffs(int(i)) - 1;
 #elif defined( KOKKOS_COMPILER_GNU ) || defined( __GNUC__ ) || defined( __GNUG__ )
   return __builtin_ffs(i) - 1;
 #else
@@ -168,7 +172,7 @@ int bit_count( unsigned i )
 KOKKOS_INLINE_FUNCTION
 unsigned integral_power_of_two_that_contains( const unsigned N )
 {
-  const unsigned i = Kokkos::Impl::bit_scan_reverse( N );
+  const unsigned i = unsigned(Kokkos::Impl::bit_scan_reverse( N ));
   return ( (1u << i) < N ) ? i + 1 : i ;
 }
 

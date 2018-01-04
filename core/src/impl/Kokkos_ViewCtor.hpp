@@ -260,7 +260,7 @@ public:
   /* Copy from a matching property subset */
   template< typename ... Args >
   ViewCtorProp( ViewCtorProp< Args ... > const & arg )
-    : ViewCtorProp< void , Args >( ((ViewCtorProp<void,Args> const &) arg ) ) ...
+    : ViewCtorProp< void , Args >( (static_cast<ViewCtorProp<void,Args> const &>(arg)) ) ...
     {}
 };
 

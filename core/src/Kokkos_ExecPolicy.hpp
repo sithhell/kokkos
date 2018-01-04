@@ -429,20 +429,20 @@ public:
 
   inline TeamPolicy set_chunk_size(int chunk) const {
     return TeamPolicy(internal_policy::set_chunk_size(chunk));
-  };
+  }
 
   inline TeamPolicy set_scratch_size(const int& level, const Impl::PerTeamValue& per_team) const {
     return TeamPolicy(internal_policy::set_scratch_size(level,per_team));
-  };
+  }
   inline TeamPolicy set_scratch_size(const int& level, const Impl::PerThreadValue& per_thread) const {
     return TeamPolicy(internal_policy::set_scratch_size(level,per_thread));
-  };
+  }
   inline TeamPolicy set_scratch_size(const int& level, const Impl::PerTeamValue& per_team, const Impl::PerThreadValue& per_thread) const {
     return TeamPolicy(internal_policy::set_scratch_size(level, per_team, per_thread));
-  };
+  }
   inline TeamPolicy set_scratch_size(const int& level, const Impl::PerThreadValue& per_thread, const Impl::PerTeamValue& per_team) const {
     return TeamPolicy(internal_policy::set_scratch_size(level, per_team, per_thread));
-  };
+  }
 
 };
 

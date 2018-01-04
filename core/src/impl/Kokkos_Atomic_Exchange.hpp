@@ -198,21 +198,21 @@ T atomic_exchange( volatile T * const dest ,
   _mm_prefetch( (const char*) dest, _MM_HINT_ET0 );
 #endif
 
-  const type v = *((type*)&val); // Extract to be sure the value doesn't change
+  const type v = *(static_cast<type*>(&val)); // Extract to be sure the value doesn't change
 
   type assumed ;
 
   union U {
     T val_T ;
     type val_type ;
-    inline U() {};
+    inline U() {}
   } old ;
 
   old.val_T = *dest ;
 
   do {
     assumed = old.val_type ;
-    old.val_type = __sync_val_compare_and_swap( (volatile type *) dest , assumed , v );
+    old.val_type = __sync_val_compare_and_swap( static_cast<volatile type *>(dest), assumed , v );
   } while ( assumed != old.val_type );
 
   return old.val_T ;
@@ -260,7 +260,7 @@ T atomic_exchange( volatile T * const dest ,
               #endif
                  , const T >::type& val )
 {
-  while( !Impl::lock_address_host_space( (void*) dest ) );
+  while( !Impl::lock_address_host_space( static_cast<void*>(dest)) );
   T return_val = *dest;
   // Don't use the following line of code here:
   //
@@ -276,7 +276,7 @@ T atomic_exchange( volatile T * const dest ,
   #ifndef KOKKOS_COMPILER_CLANG
   (void) tmp;
   #endif
-  Impl::unlock_address_host_space( (void*) dest );
+  Impl::unlock_address_host_space( static_cast<void*>(dest));
   return return_val;
 }
 
@@ -292,14 +292,14 @@ void atomic_assign( volatile T * const dest ,
   _mm_prefetch( (const char*) dest, _MM_HINT_ET0 );
 #endif
 
-  const type v = *((type*)&val); // Extract to be sure the value doesn't change
+  const type v = *(static_cast<type*>(&val)); // Extract to be sure the value doesn't change
 
   type assumed ;
 
   union U {
     T val_T ;
     type val_type ;
-    inline U() {};
+    inline U() {}
   } old ;
 
   old.val_T = *dest ;

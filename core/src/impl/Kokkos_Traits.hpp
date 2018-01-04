@@ -441,7 +441,7 @@ unsigned power_of_two_if_valid( const unsigned N )
 {
   unsigned p = ~0u ;
   if ( is_integral_power_of_two ( N ) ) {
-    p = bit_scan_forward ( N ) ;
+    p = unsigned(bit_scan_forward ( N ));
   }
   return p ;
 }

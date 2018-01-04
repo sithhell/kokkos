@@ -827,6 +827,7 @@ const char* Threads::name() { return "Threads"; }
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 #else
+void KOKKOS_CORE_SRC_THREADS_EXEC_PREVENT_LINK_ERROR();
 void KOKKOS_CORE_SRC_THREADS_EXEC_PREVENT_LINK_ERROR() {}
 #endif /* #if defined( KOKKOS_ENABLE_THREADS ) */
 

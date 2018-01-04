@@ -41,6 +41,8 @@
 //@HEADER
 */
 
+#include "Kokkos_CPUDiscovery.hpp"
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -71,12 +73,12 @@ GetSystemInfo(&info);
 #endif
 #endif
 #ifdef _SC_NPROCESSORS_ONLN
-  nprocs = sysconf(_SC_NPROCESSORS_ONLN);
+  nprocs = int(sysconf(_SC_NPROCESSORS_ONLN));
   if (nprocs < 1)
   {
     return -1;
   }
-  nprocs_max = sysconf(_SC_NPROCESSORS_CONF);
+  nprocs_max = int(sysconf(_SC_NPROCESSORS_CONF));
   if (nprocs_max < 1)
   {
     return -1;
