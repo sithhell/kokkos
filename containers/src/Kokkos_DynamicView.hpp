@@ -314,10 +314,26 @@ public:
 
   //----------------------------------------------------------------------
 
-  ~DynamicView() = default ;
+  KOKKOS_INLINE_FUNCTION ~DynamicView() {}
   DynamicView() = default ;
-  DynamicView( DynamicView && ) = default ;
-  DynamicView( const DynamicView & ) = default ;
+  KOKKOS_INLINE_FUNCTION DynamicView( DynamicView && rhs )
+    : m_track(std::move(rhs.m_track))
+    , m_chunks(rhs.m_chunks)
+    , m_chunk_shift(rhs.m_chunk_shift)
+    , m_chunk_mask(rhs.m_chunk_mask)
+    , m_chunk_max(rhs.m_chunk_max)
+    , m_chunk_size(rhs.m_chunk_size)
+  {
+  }
+  KOKKOS_INLINE_FUNCTION DynamicView( const DynamicView & rhs )
+    : m_track(rhs.m_track)
+    , m_chunks(rhs.m_chunks)
+    , m_chunk_shift(rhs.m_chunk_shift)
+    , m_chunk_mask(rhs.m_chunk_mask)
+    , m_chunk_max(rhs.m_chunk_max)
+    , m_chunk_size(rhs.m_chunk_size)
+  {
+  }
   DynamicView & operator = ( DynamicView && ) = default ;
   DynamicView & operator = ( const DynamicView & ) = default ;
 
