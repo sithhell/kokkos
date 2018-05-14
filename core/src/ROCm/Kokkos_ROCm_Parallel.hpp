@@ -1145,6 +1145,247 @@ public:
   //----------------------------------------
 };
 
+//----------------------------------------------------------------------------
+template< class FunctorType, class ReturnType, class ... Traits >
+class ParallelScanWithTotal< FunctorType
+                           , Kokkos::RangePolicy< Traits ... >
+                           , ReturnType
+                           , Kokkos::Experimental::ROCm
+                           >
+{
+private:
+
+  typedef Kokkos::RangePolicy< Traits ... >  Policy ;
+  typedef typename Policy::member_type  Member ;
+  typedef typename Policy::work_tag     WorkTag ;
+  typedef typename Policy::WorkRange    WorkRange ;
+  typedef typename Policy::launch_bounds  LaunchBounds ;
+
+  typedef Kokkos::Impl::FunctorValueTraits< FunctorType, WorkTag > ValueTraits ;
+  typedef Kokkos::Impl::FunctorValueInit<   FunctorType, WorkTag > ValueInit ;
+  typedef Kokkos::Impl::FunctorValueOps<    FunctorType, WorkTag > ValueOps ;
+
+public:
+
+  typedef typename ValueTraits::pointer_type    pointer_type ;
+  typedef typename ValueTraits::reference_type  reference_type ;
+  typedef FunctorType                           functor_type ;
+  typedef Kokkos::Experimental::ROCm::size_type size_type ;
+
+private:
+  // Algorithmic constraints:
+  //  (a) blockDim.y is a power of two
+  //  (b) blockDim.y == blockDim.z == 1
+  //  (c) gridDim.x  <= blockDim.y * blockDim.y
+  //  (d) gridDim.y  == gridDim.z == 1
+
+  const FunctorType m_functor ;
+  const Policy      m_policy ;
+  size_type *       m_scratch_space ;
+  size_type *       m_scratch_flags ;
+  size_type         m_final ;
+  ReturnType      & m_returnvalue;
+
+  template< class TagType >
+  KOKKOS_INLINE_FUNCTION
+  typename std::enable_if< std::is_same< TagType , void >::value >::type
+  exec_range( const Member & i , reference_type update , const bool final_result ) const
+    { m_functor( i , update , final_result ); }
+
+  template< class TagType >
+  KOKKOS_INLINE_FUNCTION
+  typename std::enable_if< ! std::is_same< TagType , void >::value >::type
+  exec_range( const Member & i , reference_type update , const bool final_result ) const
+    { m_functor( TagType() , i , update , final_result ); }
+
+  KOKKOS_INLINE_FUNCTION
+  void initial(void) const
+  {
+    const integral_nonzero_constant< size_type , ValueTraits::StaticValueSize / sizeof(size_type) >
+      word_count( ValueTraits::value_size( m_functor ) / sizeof(size_type) );
+
+    // pointer to shared data accounts for the resevered space at the start
+    size_type * const shared_data   = kokkos_impl_rocm_shared_memory<size_type>()+2*sizeof(uint64_t);
+    size_type * const shared_value = shared_data + word_count.value * threadIdx_y ;
+m_scratch_space[3] = 57;
+    ValueInit::init( m_functor , shared_value );
+
+    // Number of blocks is bounded so that the reduction can be limited to two passes.
+    // Each thread block is given an approximately equal amount of work to perform.
+    // Accumulate the values for this block.
+    // The accumulation ordering does not match the final pass, but is arithmatically equivalent.
+
+    const WorkRange range( m_policy , blockIdx_x , gridDim_x );
+
+    for ( Member iwork = range.begin() + threadIdx_y , iwork_end = range.end() ;
+          iwork < iwork_end ; iwork += blockDim_y ) {
+      this-> template exec_range< WorkTag >( iwork , ValueOps::reference( shared_value ) , false );
+    }
+
+
+    // Reduce and scan, writing out scan of blocks' totals and block-groups' totals.
+    // Blocks' scan values are written to 'blockIdx.x' location.
+    // Block-groups' scan values are at: i = ( j * blockDim.y - 1 ) for i < gridDim.x
+    rocm_single_inter_block_reduce_scan<true,FunctorType,WorkTag>( m_functor , blockIdx_x , gridDim_x , shared_data, m_scratch_space , m_scratch_flags );
+  }
+
+  //----------------------------------------
+
+  KOKKOS_INLINE_FUNCTION
+  void final(void) const
+  {
+    const integral_nonzero_constant< size_type , ValueTraits::StaticValueSize / sizeof(size_type) >
+      word_count( ValueTraits::value_size( m_functor ) / sizeof(size_type) );
+    // Use shared memory as an exclusive scan: { 0 , value[0] , value[1] , value[2] , ... }
+    size_type * const shared_data   = kokkos_impl_rocm_shared_memory<size_type>()+2*sizeof(uint64_t);
+    size_type * const shared_prefix = shared_data + word_count.value * threadIdx_y ;
+    size_type * const shared_accum  = shared_data + word_count.value * ( blockDim_y + 1 );
+
+    // Starting value for this thread block is the previous block's total.
+    if ( blockIdx_x ) {
+      size_type * const block_total = m_scratch_space + word_count.value * ( blockIdx_x - 1 );
+      for ( unsigned i = threadIdx_y ; i < word_count.value ; ++i ) { shared_accum[i] = block_total[i] ; }
+    }
+    else if ( 0 == threadIdx_y ) {
+      ValueInit::init( m_functor , shared_accum );
+    }
+    const WorkRange range( m_policy , blockIdx_x , gridDim_x );
+
+    for ( typename Policy::member_type iwork_base = range.begin(); iwork_base < range.end() ; iwork_base += blockDim_y ) {
+
+      const typename Policy::member_type iwork = iwork_base + threadIdx_y ;
+
+      __syncthreads(); // Don't overwrite previous iteration values until they are used
+
+      ValueInit::init( m_functor , shared_prefix + word_count.value );
+
+      // Copy previous block's accumulation total into thread[0] prefix and inclusive scan value of this block
+      for ( unsigned i = threadIdx_y ; i < word_count.value ; ++i ) {
+        shared_data[i + word_count.value] = shared_data[i] = shared_accum[i] ;
+      }
+
+      if ( ROCmTraits::WavefrontSize < word_count.value ) { __syncthreads(); } // Protect against large scan values.
+
+      // Call functor to accumulate inclusive scan value for this work item
+      if ( iwork < range.end() ) {
+        this-> template exec_range< WorkTag >( iwork , ValueOps::reference( shared_prefix + word_count.value ) , false );
+      }
+
+      // Scan block values into locations shared_data[1..blockDim.y]
+      rocm_intra_block_reduce_scan<true,FunctorType,WorkTag>( m_functor , typename ValueTraits::pointer_type(shared_data+word_count.value) );
+
+      {
+        size_type * const block_total = shared_data + word_count.value * blockDim_y ;
+// if ( blockIdx_x )
+//  block_total[1] = (ReturnType)3 ;
+        for ( unsigned i = threadIdx_y ; i < word_count.value ; ++i ) { shared_accum[i] = block_total[i]; }
+      }
+
+      // Call functor with exclusive scan value
+      if ( iwork < range.end() ) {
+        this-> template exec_range< WorkTag >( iwork , ValueOps::reference( shared_prefix ) , true );
+      }
+    }
+  }
+
+public:
+
+  //----------------------------------------
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(void) const
+  {
+    if ( ! m_final ) {
+      initial();
+    }
+    else {
+      final();
+    }
+  }
+
+  // Determine block size constrained by shared memory:
+  static inline
+  unsigned local_block_size( const FunctorType & f )
+    {
+      // blockDim.y must be power of two = 256 (4 wavefronts) or 512 (8 wavefronts) or 1024 (16 wavefronts)
+      // gridDim.x <= blockDim.y * blockDim.y
+      //
+      // 4 wavefronts was 10% faster than 8 wavefronts and 20% faster than 16 wavefronts in unit testing
+
+//      unsigned n = ROCmTraits::WavefrontSize * 4 ;
+      unsigned n = ROCmTraits::WavefrontSize ;
+      while ( n && ROCmTraits::SharedMemoryCapacity < rocm_single_inter_block_reduce_scan_shmem<false,FunctorType,WorkTag>( f , n ) ) { n >>= 1 ; }
+//      return 8 ;
+      return n ;
+    }
+
+  inline
+  void execute()
+    {
+      const int nwork    = m_policy.end() - m_policy.begin();
+      if ( nwork ) {
+        enum { GridMaxGFX_9 = 0x0ffff };
+
+        const int block_size = local_block_size( m_functor );
+
+        const int grid_max =
+          ( block_size * block_size ) < GridMaxGFX_9 ?
+          ( block_size * block_size ) : GridMaxGFX_9 ;
+
+        // At most 'max_grid' blocks:
+        const int max_grid = std::min( int(grid_max) , int(( nwork + block_size - 1 ) / block_size ));
+
+        // How much work per block:
+        const int work_per_block = ( nwork + max_grid - 1 ) / max_grid ;
+
+        // How many block are really needed for this much work:
+        const int grid_x = ( nwork + work_per_block - 1 ) / work_per_block ;
+printf("nwork %d, block_size %d, grid_max %d, max_grid %d\n", nwork,block_size,grid_max,max_grid);
+printf("work_per_block %d, grid_x %d\n",work_per_block, grid_x);
+
+        m_scratch_space = rocm_internal_scratch_space( ValueTraits::value_size( m_functor ) * (grid_x+2) );
+//printf("m_scratch_space = %p, %d\n",m_scratch_space,ValueTraits::value_size( m_functor ) * grid_x);
+        m_scratch_flags = rocm_internal_scratch_flags( sizeof(size_type) * 1 );
+
+        const dim3 grid( grid_x , block_size , 1 );
+        const dim3 block( 1 , block_size , 1 ); 
+        // shared memory must include space for syncthreads flag
+        // we reserve 16 bytes to preserve alignment for the block data
+        // this space is at the beginning of dynamic shared (LDS)
+        const int shmem = 2*sizeof(uint64_t) + 
+                  ValueTraits::value_size( m_functor ) * ( block_size + 2 );
+
+        m_final = false ;
+        ROCmParallelLaunch< ParallelScanWithTotal, LaunchBounds >( *this, grid, block, shmem ); // copy to device and execute
+
+        m_final = true ;
+        ROCmParallelLaunch< ParallelScanWithTotal, LaunchBounds >( *this, grid, block, shmem ); // copy to device and execute
+
+        const int size = ValueTraits::value_size( m_functor );
+//        DeepCopy<HostSpace,Kokkos::Experimental::ROCmSpace>( &m_returnvalue, m_scratch_space + (grid_x - 1)*size/sizeof(int), size );
+        DeepCopy<HostSpace,Kokkos::Experimental::ROCmSpace>( &m_returnvalue, m_scratch_space + (grid_x - 1)*size/sizeof(int), size );
+  ReturnType       m_debug0;
+  ReturnType       m_debug1;
+        DeepCopy<HostSpace,Kokkos::Experimental::ROCmSpace>( &m_debug0, m_scratch_space , size );
+        DeepCopy<HostSpace,Kokkos::Experimental::ROCmSpace>( &m_debug1, m_scratch_space + 3 , size );
+printf("debug0  = %lld\n",m_debug0);
+printf("debug1  = %lld\n",m_debug1);
+printf("rval   = %lld\n",m_returnvalue);
+      }
+    }
+
+  ParallelScanWithTotal( const FunctorType  & arg_functor ,
+                         const Policy       & arg_policy ,
+                         ReturnType         & arg_returnvalue )
+  : m_functor( arg_functor )
+  , m_policy( arg_policy )
+  , m_scratch_space( 0 )
+  , m_scratch_flags( 0 )
+  , m_final( false )
+  , m_returnvalue( arg_returnvalue )
+  { }
+};
+
 }
 }
 

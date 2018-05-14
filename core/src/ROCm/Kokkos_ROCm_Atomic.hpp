@@ -248,6 +248,35 @@ namespace Kokkos {
     return hc::atomic_fetch_add((int *)dest, val);
   }
   
+#if 0  
+  struct ROCm_Atomic_CAS {
+    template<class OP>
+    KOKKOS_INLINE_FUNCTION
+    int operator () (volatile int * dest, OP &&op){
+       int read,compare,val;
+       compare = *dest;
+       read = compare;
+       do {
+         compare = read;
+         val = op(compare);
+         hc::atomic_compare_exchange(dest,&read,val);
+       } while (read != compare);
+       return val;
+    }
+  };
+
+  template<class OP>
+  KOKKOS_INLINE_FUNCTION
+  int atomic_cas_op (volatile int * dest, OP &&op) {
+    return ROCm_atomic_CAS(dest, std::forward<OP>(op));
+  }
+  
+  KOKKOS_INLINE_FUNCTION
+  int atomicInc (volatile int * dest, const int& val) {
+    return atomic_cas_op(dest, [=](int old){return ((old>=val?0:(old+1)))});
+  }
+#endif
+  
   KOKKOS_INLINE_FUNCTION
   unsigned int atomic_fetch_add(unsigned int* dest, const unsigned int& val) {
     return hc::atomic_fetch_add(dest, val);

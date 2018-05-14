@@ -567,9 +567,9 @@ ROCmInternal::scratch_flags( const Kokkos::Experimental::ROCm::size_type size )
 
     m_scratchFlagsCount = ( size + sizeScratchGrain - 1 ) / sizeScratchGrain ;
 
-    typedef Kokkos::Impl::SharedAllocationRecord< Kokkos::HostSpace , void > Record ;
+    typedef Kokkos::Impl::SharedAllocationRecord< Kokkos::Experimental::ROCmSpace , void > Record ;
 
-    Record * const r = Record::allocate( Kokkos::HostSpace()
+    Record * const r = Record::allocate( Kokkos::Experimental::ROCmSpace()
                                        , "InternalScratchFlags"
                                        , ( sizeScratchGrain  * m_scratchFlagsCount ) );
 
@@ -590,9 +590,9 @@ ROCmInternal::scratch_space( const Kokkos::Experimental::ROCm::size_type size )
 
     m_scratchSpaceCount = ( size + sizeScratchGrain - 1 ) / sizeScratchGrain ;
 
-     typedef Kokkos::Impl::SharedAllocationRecord< Kokkos::HostSpace , void > Record ;
+     typedef Kokkos::Impl::SharedAllocationRecord< Kokkos::Experimental::ROCmSpace , void > Record ;
 
-     Record * const r = Record::allocate( Kokkos::HostSpace()
+     Record * const r = Record::allocate( Kokkos::Experimental::ROCmSpace()
                                         , "InternalScratchSpace"
                                         , ( sizeScratchGrain  * m_scratchSpaceCount ) );
 
