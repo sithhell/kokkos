@@ -104,6 +104,12 @@ class Qthreads;  ///< Execution space with Qthreads back-end.
 class Threads;   ///< Execution space with pthreads back-end.
 #endif
 
+#if defined( KOKKOS_ENABLE_HPX )
+namespace Experimental {
+class HPX;   ///< Execution space with HPX back-end.
+}
+#endif
+
 #if defined( KOKKOS_ENABLE_OPENMP )
 class OpenMP;    ///< OpenMP execution space.
 #endif
@@ -152,6 +158,8 @@ namespace Kokkos {
   typedef Experimental::ROCm DefaultExecutionSpace ;
 #elif defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_OPENMP )
   typedef OpenMP DefaultExecutionSpace;
+#elif defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_HPX )
+  typedef Experimental::HPX DefaultExecutionSpace;
 #elif defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_THREADS )
   typedef Threads DefaultExecutionSpace;
 //#elif defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_QTHREADS )

@@ -70,7 +70,7 @@ ENDIF()
 IF(DEFINED Kokkos_Arch)
   MESSAGE(FATAL_ERROR "Defined Kokkos_Arch, use KOKKOS_ARCH instead!")
 ENDIF()
-  
+
 #-------------------------------------------------------------------------------
 # List of possible host architectures.
 #-------------------------------------------------------------------------------
@@ -136,10 +136,10 @@ set(KOKKOS_INTERNAL_MEMKIND experimental_memkind)
 # List of possible Advanced options
 set(KOKKOS_OPTIONS_LIST)
 list(APPEND KOKKOS_OPTIONS_LIST
-       AGGRESSIVE_VECTORIZATION    
-       DISABLE_PROFILING          
+       AGGRESSIVE_VECTORIZATION
+       DISABLE_PROFILING
        DISABLE_DUALVIEW_MODIFY_CHECK
-       ENABLE_PROFILE_LOAD_PRINT   
+       ENABLE_PROFILE_LOAD_PRINT
     )
 # Map of cmake variables to Makefile variables
 set(KOKKOS_INTERNAL_LDG_INTRINSIC use_ldg)
@@ -158,7 +158,7 @@ list(APPEND KOKKOS_CUDA_OPTIONS_LIST
     RELOCATABLE_DEVICE_CODE    # rdc
     LAMBDA                     # enable_lambda
     )
-    
+
 # Map of cmake variables to Makefile variables
 set(KOKKOS_INTERNAL_LDG_INTRINSIC use_ldg)
 set(KOKKOS_INTERNAL_UVM force_uvm)
@@ -185,7 +185,7 @@ string(REPLACE ";" ${tmpr} KOKKOS_INTERNAL_ARCH_DOCSTR "${KOKKOS_ARCH_LIST}")
 # performance by turning on architecture specific code.
 # NOT SET is used to determine if the option is passed in.  It is reset to
 # default "None" down below.
-set(KOKKOS_ARCH "NOT_SET" CACHE STRING 
+set(KOKKOS_ARCH "NOT_SET" CACHE STRING
       "Optimize for specific host architecture. Options are: ${KOKKOS_INTERNAL_ARCH_DOCSTR}")
 
 # Whether to build separate libraries or now
@@ -199,7 +199,7 @@ set(KOKKOS_QTHREADS_DIR "" CACHE PATH "Location of Qthreads library.")
 #------------------------------- KOKKOS_DEVICES --------------------------------
 #-------------------------------------------------------------------------------
 # Figure out default settings
-IF(Trilinos_ENABLE_Kokkos)             
+IF(Trilinos_ENABLE_Kokkos)
   set_kokkos_default_default(SERIAL ON)
   set_kokkos_default_default(PTHREAD OFF)
   IF(TPL_ENABLE_QTHREAD)
@@ -212,6 +212,11 @@ IF(Trilinos_ENABLE_Kokkos)
   ELSE()
     set_kokkos_default_default(OPENMP OFF)
   ENDIF()
+  IF(TPL_ENABLE_HPX)
+    set_kokkos_default_default(HPX ${Trilinos_ENABLE_HPX})
+  ELSE()
+    set_kokkos_default_default(HPX OFF)
+  ENDIF()
   IF(TPL_ENABLE_CUDA)
     set_kokkos_default_default(CUDA ${TPL_ENABLE_CUDA})
   ELSE()
@@ -222,6 +227,7 @@ ELSE()
   set_kokkos_default_default(SERIAL ON)
   set_kokkos_default_default(OPENMP OFF)
   set_kokkos_default_default(PTHREAD OFF)
+  set_kokkos_default_default(HPX OFF)
   set_kokkos_default_default(QTHREAD OFF)
   set_kokkos_default_default(CUDA OFF)
   set_kokkos_default_default(ROCM OFF)
@@ -232,6 +238,7 @@ ENDIF()
 set(KOKKOS_ENABLE_SERIAL ${KOKKOS_INTERNAL_ENABLE_SERIAL_DEFAULT} CACHE BOOL "Whether to enable the Kokkos::Serial device.  This device executes \"parallel\" kernels sequentially on a single CPU thread.  It is enabled by default.  If you disable this device, please enable at least one other CPU device, such as Kokkos::OpenMP or Kokkos::Threads.")
 set(KOKKOS_ENABLE_OPENMP ${KOKKOS_INTERNAL_ENABLE_OPENMP_DEFAULT} CACHE BOOL "Enable OpenMP support in Kokkos." FORCE)
 set(KOKKOS_ENABLE_PTHREAD ${KOKKOS_INTERNAL_ENABLE_PTHREAD_DEFAULT} CACHE BOOL "Enable Pthread support in Kokkos.")
+set(KOKKOS_ENABLE_HPX ${KOKKOS_INTERNAL_ENABLE_HPX_DEFAULT} CACHE BOOL "Enable HPX support in Kokkos.")
 set(KOKKOS_ENABLE_QTHREADS ${KOKKOS_INTERNAL_ENABLE_QTHREADS_DEFAULT} CACHE BOOL "Enable Qthreads support in Kokkos.")
 set(KOKKOS_ENABLE_CUDA ${KOKKOS_INTERNAL_ENABLE_CUDA_DEFAULT} CACHE BOOL "Enable CUDA support in Kokkos.")
 set(KOKKOS_ENABLE_ROCM ${KOKKOS_INTERNAL_ENABLE_ROCM_DEFAULT} CACHE BOOL "Enable ROCm support in Kokkos.")
@@ -247,7 +254,7 @@ set(KOKKOS_ENABLE_ROCM ${KOKKOS_INTERNAL_ENABLE_ROCM_DEFAULT} CACHE BOOL "Enable
 set_kokkos_default_default(DEBUG OFF)
 set(KOKKOS_ENABLE_DEBUG ${KOKKOS_INTERNAL_ENABLE_DEBUG_DEFAULT} CACHE BOOL "Enable Kokkos Debug.")
 
-# From Makefile.kokkos: Advanced Options: 
+# From Makefile.kokkos: Advanced Options:
 #compiler_warnings, aggressive_vectorization, disable_profiling, disable_dualview_modify_check, enable_profile_load_print
 set_kokkos_default_default(COMPILER_WARNINGS OFF)
 set(KOKKOS_ENABLE_COMPILER_WARNINGS ${KOKKOS_INTERNAL_ENABLE_COMPILER_WARNINGS_DEFAULT} CACHE BOOL "Enable compiler warnings.")
@@ -329,7 +336,7 @@ ENDIF()
 
 # Set actual options
 set(KOKKOS_CUDA_DIR "" CACHE PATH "Location of CUDA library.  Defaults to where nvcc installed.")
-set(KOKKOS_ENABLE_CUDA_LDG_INTRINSIC ${KOKKOS_INTERNAL_ENABLE_CUDA_LDG_INTRINSIC_DEFAULT} CACHE BOOL "Enable CUDA LDG. (cuda option)") 
+set(KOKKOS_ENABLE_CUDA_LDG_INTRINSIC ${KOKKOS_INTERNAL_ENABLE_CUDA_LDG_INTRINSIC_DEFAULT} CACHE BOOL "Enable CUDA LDG. (cuda option)")
 set(KOKKOS_ENABLE_CUDA_UVM ${KOKKOS_INTERNAL_ENABLE_CUDA_UVM_DEFAULT} CACHE BOOL "Enable CUDA unified virtual memory.")
 set(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE ${KOKKOS_INTERNAL_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE_DEFAULT} CACHE BOOL "Enable relocatable device code for CUDA. (cuda option)")
 set(KOKKOS_ENABLE_CUDA_LAMBDA ${KOKKOS_INTERNAL_ENABLE_CUDA_LAMBDA_DEFAULT} CACHE BOOL "Enable lambdas for CUDA. (cuda option)")
@@ -339,7 +346,7 @@ set(KOKKOS_ENABLE_CUDA_LAMBDA ${KOKKOS_INTERNAL_ENABLE_CUDA_LAMBDA_DEFAULT} CACH
 #----------------------- HOST ARCH AND LEGACY TRIBITS --------------------------
 #-------------------------------------------------------------------------------
 
-# This defines the previous legacy TriBITS builds. 
+# This defines the previous legacy TriBITS builds.
 set(KOKKOS_LEGACY_TRIBITS False)
 IF ("${KOKKOS_ARCH}" STREQUAL "NOT_SET")
   set(KOKKOS_ARCH "None")

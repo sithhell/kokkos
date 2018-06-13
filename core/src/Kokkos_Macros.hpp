@@ -49,6 +49,7 @@
  *
  *  KOKKOS_ENABLE_CUDA                Kokkos::Cuda execution and memory spaces
  *  KOKKOS_ENABLE_THREADS             Kokkos::Threads execution space
+ *  KOKKOS_ENABLE_HPX                 Kokkos::HPX execution space
  *  KOKKOS_ENABLE_QTHREADS            Kokkos::Qthreads execution space
  *  KOKKOS_ENABLE_OPENMP              Kokkos::OpenMP execution space
  *  KOKKOS_ENABLE_OPENMPTARGET        Kokkos::Experimental::OpenMPTarget execution space
@@ -98,13 +99,15 @@
 
 #if defined(KOKKOS_ENABLE_SERIAL) || defined(KOKKOS_ENABLE_THREADS) || \
     defined(KOKKOS_ENABLE_OPENMP) || defined(KOKKOS_ENABLE_QTHREADS) || \
-    defined(KOKKOS_ENABLE_ROCM) || defined(KOKKOS_ENABLE_OPENMPTARGET)
+    defined(KOKKOS_ENABLE_ROCM) || defined(KOKKOS_ENABLE_OPENMPTARGET) || \
+    defined(KOKKOS_ENABLE_HPX)
   #define KOKKOS_INTERNAL_ENABLE_NON_CUDA_BACKEND
 #endif
 
 #if !defined(KOKKOS_ENABLE_THREADS) && !defined(KOKKOS_ENABLE_CUDA) && \
     !defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_QTHREADS) && \
-    !defined(KOKKOS_ENABLE_ROCM) && !defined(KOKKOS_ENABLE_OPENMPTARGET)
+    !defined(KOKKOS_ENABLE_ROCM) && !defined(KOKKOS_ENABLE_OPENMPTARGET) && \
+    !defined(KOKKOS_ENABLE_HPX)
   #define KOKKOS_INTERNAL_NOT_PARALLEL
 #endif
 
@@ -259,7 +262,7 @@
   #endif
 #endif
 
-#if defined( __PGIC__ ) 
+#if defined( __PGIC__ )
   #define KOKKOS_COMPILER_PGI __PGIC__*100+__PGIC_MINOR__*10+__PGIC_PATCHLEVEL__
 
   #if ( 1540 > KOKKOS_COMPILER_PGI )
@@ -316,7 +319,7 @@
 
   #if defined( KOKKOS_ARCH_AVX512MIC )
       #define KOKKOS_ENABLE_RFO_PREFETCH 1
-  #endif 
+  #endif
 
   #if defined( __MIC__ )
     // Compiling for Xeon Phi
@@ -454,6 +457,7 @@
           ( defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_OPENMPTARGET ) ? 1 : 0 ) + \
           ( defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_OPENMP ) ? 1 : 0 ) + \
           ( defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_THREADS ) ? 1 : 0 ) + \
+          ( defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_HPX ) ? 1 : 0 ) + \
           ( defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_QTHREADS ) ? 1 : 0 ) + \
           ( defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_SERIAL ) ? 1 : 0 ) )
   #error "More than one KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_* specified."
@@ -466,6 +470,7 @@
 #elif defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_OPENMPTARGET )
 #elif defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_OPENMP )
 #elif defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_THREADS )
+#elif defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_HPX )
 //#elif defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_QTHREADS )
 #elif defined( KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_SERIAL )
 #elif defined( KOKKOS_ENABLE_CUDA )
@@ -478,6 +483,8 @@
   #define KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_OPENMP
 #elif defined( KOKKOS_ENABLE_THREADS )
   #define KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_THREADS
+#elif defined( KOKKOS_ENABLE_HPX )
+  #define KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_HPX
 //#elif defined( KOKKOS_ENABLE_QTHREADS )
 //  #define KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_QTHREADS
 #else
